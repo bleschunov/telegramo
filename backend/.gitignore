@@ -1,0 +1,5 @@
+sessions/*
+!sessions/.gitkeep
+
+.env
+.ruff_cache
