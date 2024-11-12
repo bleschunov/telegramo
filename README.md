@@ -6,6 +6,8 @@
 
 Линтер:
 
+`yarn run lint --fix`
+
 `yarn prettier . --write`
 
 [Страница в Notion с .env](https://www.notion.so/krenels/Telegramo-env-c5751070adaa47768e293748c555031f?pvs=4)
