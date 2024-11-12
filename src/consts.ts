@@ -1,5 +1,3 @@
 const TELEGRAM_SESSION_PREFIX = "session"
 
-export {
-    TELEGRAM_SESSION_PREFIX
-}
+export { TELEGRAM_SESSION_PREFIX }

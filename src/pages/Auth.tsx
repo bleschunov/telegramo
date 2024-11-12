@@ -1,46 +1,63 @@
-import React, {type BaseSyntheticEvent, useState} from 'react'
-import {TELEGRAM_SESSION_PREFIX} from "../consts.ts";
-import {TelegramClient} from "telegram";
-import createTelegramClient from "../fn/client.ts";
+import React, { type BaseSyntheticEvent, useState } from "react"
+import { TELEGRAM_SESSION_PREFIX } from "../consts.ts"
+import { TelegramClient } from "telegram"
+import createTelegramClient from "../fn/client.ts"
 
 interface IInitialState {
-  phoneNumber: string
-  password: string
-  phoneCode: string
+    phoneNumber: string
+    password: string
+    phoneCode: string
 }
 
 const Auth: React.FC = () => {
-    const [{ phoneNumber, password, phoneCode }, setAuthInfo] = useState<IInitialState>({ phoneNumber: '', password: '', phoneCode: '' })
-    const [currentClient, setCurrentClient] = useState<TelegramClient | null>(null)
+    const [{ phoneNumber, password, phoneCode }, setAuthInfo] =
+        useState<IInitialState>({
+            phoneNumber: "",
+            password: "",
+            phoneCode: "",
+        })
+    const [currentClient, setCurrentClient] = useState<TelegramClient | null>(
+        null,
+    )
 
-    async function sendCodeHandler (): Promise<void> {
+    async function sendCodeHandler(): Promise<void> {
         const client = await createTelegramClient(phoneNumber)
         setCurrentClient(client)
         await client.connect()
         await client.sendCode(
             {
                 apiId: parseInt(import.meta.env.VITE_API_ID),
-                apiHash: import.meta.env.VITE_API_HASH
+                apiHash: import.meta.env.VITE_API_HASH,
             },
-            phoneNumber
+            phoneNumber,
         )
     }
 
-    async function clientStartHandler (): Promise<void> {
+    async function clientStartHandler(): Promise<void> {
         if (currentClient) {
-            await currentClient.start({ phoneNumber, password: userAuthParamCallback(password), phoneCode: userAuthParamCallback(phoneCode), onError: () => {} })
-            localStorage.setItem(`${TELEGRAM_SESSION_PREFIX}_${phoneNumber}`, JSON.stringify(currentClient.session.save()))
+            await currentClient.start({
+                phoneNumber,
+                password: userAuthParamCallback(password),
+                phoneCode: userAuthParamCallback(phoneCode),
+                onError: () => {},
+            })
+            localStorage.setItem(
+                `${TELEGRAM_SESSION_PREFIX}_${phoneNumber}`,
+                JSON.stringify(currentClient.session.save()),
+            )
             // setAuthorized(true)
         }
     }
 
-    function inputChangeHandler ({ target: { name, value } }: BaseSyntheticEvent): void {
+    function inputChangeHandler({
+        target: { name, value },
+    }: BaseSyntheticEvent): void {
         setAuthInfo((authInfo) => ({ ...authInfo, [name]: value }))
     }
 
-    function userAuthParamCallback <T> (param: T): () => Promise<T> {
+    function userAuthParamCallback<T>(param: T): () => Promise<T> {
         return async function () {
-            return await new Promise<T>(resolve => {
+            return await new Promise<T>((resolve) => {
                 resolve(param)
             })
         }
@@ -57,7 +74,11 @@ const Auth: React.FC = () => {
                 onChange={inputChangeHandler}
             />
 
-            <input type="button" value="start client" onClick={sendCodeHandler} />
+            <input
+                type="button"
+                value="start client"
+                onClick={sendCodeHandler}
+            />
 
             <label htmlFor="phoneCode">Phone Code</label>
             <input
@@ -68,7 +89,11 @@ const Auth: React.FC = () => {
                 onChange={inputChangeHandler}
             />
 
-            <input type="button" value="insert code" onClick={clientStartHandler} />
+            <input
+                type="button"
+                value="insert code"
+                onClick={clientStartHandler}
+            />
         </>
     )
 }
