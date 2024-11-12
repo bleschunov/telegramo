@@ -1,7 +1,7 @@
 import React, {type BaseSyntheticEvent, useState} from 'react'
-import {TELEGRAM_SESSION_PREFIX} from "./consts.ts";
+import {TELEGRAM_SESSION_PREFIX} from "../consts.ts";
 import {TelegramClient} from "telegram";
-import createTelegramClient from "./client.ts";
+import createTelegramClient from "../fn/client.ts";
 
 interface IInitialState {
   phoneNumber: string

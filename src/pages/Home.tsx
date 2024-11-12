@@ -1,11 +1,12 @@
-import {useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Dialog} from "telegram/tl/custom/dialog";
 import {TotalList} from "telegram/Helpers";
 import {Stack} from "@mui/joy";
 import {Api} from "telegram";
 import Message = Api.Message;
-import createTelegramClient from "./client.ts";
-import {TELEGRAM_SESSION_PREFIX} from "./consts.ts";
+import createTelegramClient from "../fn/client.ts";
+import {TELEGRAM_SESSION_PREFIX} from "../consts.ts";
+import ChatView from "../components/Chat.tsx";
 
 
 function* telegramSessionKeys(): Generator<string> {
@@ -50,10 +51,11 @@ const Home = () => {
 
     return (
         <Stack
+            flex="0 0 100%"
             direction="row"
         >
             <ul>{dialogs.map((dialog, index) => <li key={index} onClick={() => handleDialogClick(dialog)}>{dialog.name}</li>)}</ul>
-            <ul>{messages.map((message, index) => <li key={index}>{message.message}</li>)}</ul>
+            { currentDialog && <ChatView dialog={currentDialog} /> }
         </Stack>
     )
 }

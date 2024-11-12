@@ -1,7 +1,7 @@
 import React from 'react'
-import Home from "./Home.tsx";
+import Home from "./pages/Home.tsx";
 import {createBrowserRouter, RouterProvider} from "react-router-dom";
-import Auth from "./Auth.tsx";
+import Auth from "./pages/Auth.tsx";
 
 const router = createBrowserRouter([
     {
