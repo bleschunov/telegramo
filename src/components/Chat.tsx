@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react"
-import { Dialog } from "telegram/tl/custom/dialog"
 import { TotalList } from "telegram/Helpers"
 import { Api } from "telegram"
 import Message = Api.Message
 import { Box, Button, Input, Stack } from "@mui/joy"
+import { TelegramoDialog } from "../model.ts"
 
 const MessageView: React.FC<{ message: Message }> = ({ message }) => {
     return (
@@ -14,20 +14,19 @@ const MessageView: React.FC<{ message: Message }> = ({ message }) => {
 }
 
 const MessageInput: React.FC<{
-    dialog: Dialog
+    dialog: TelegramoDialog
     setMessages: React.Dispatch<React.SetStateAction<TotalList<Message>>>
 }> = ({ dialog, setMessages }) => {
     const [value, setValue] = useState<string>("")
 
-    const handleInputChange = (event) => {
-        setValue(event.target.value)
+    const handleInputChange = (event: React.FormEvent<HTMLInputElement>) => {
+        setValue((event.target as HTMLInputElement).value)
     }
 
     const handleInputSubmit = async () => {
-        const newMessage = await dialog._client.sendMessage(
-            dialog.inputEntity,
-            { message: value },
-        )
+        const newMessage = await dialog.client.sendMessage(dialog.dialog, {
+            message: value,
+        })
         setMessages((oldMessages) => [...oldMessages, newMessage])
         setValue("")
     }
@@ -48,19 +47,19 @@ const MessageInput: React.FC<{
     )
 }
 
-const ChatView: React.FC<{ dialog: Dialog }> = ({ dialog }) => {
+const ChatView: React.FC<{ dialog: TelegramoDialog }> = ({ dialog }) => {
     const [messages, setMessages] = useState<TotalList<Message>>(
         new TotalList(),
     )
 
     useEffect(() => {
         ;(async () => {
-            setMessages((await dialog._client.getMessages(dialog.id)).reverse())
+            setMessages((await dialog.messages()).reverse())
         })()
-    }, [dialog._client, dialog.id])
+    }, [dialog])
 
     return (
-        <Stack flex="1">
+        <Stack>
             <Stack flex="1">
                 {messages.map((msg, index) => (
                     <MessageView key={index} message={msg} />
