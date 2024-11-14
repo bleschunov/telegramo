@@ -1,7 +1,6 @@
 import React, { type BaseSyntheticEvent, useState } from "react"
 import { TELEGRAM_SESSION_PREFIX } from "../consts.ts"
-import { TelegramClient } from "telegram"
-import createTelegramClient from "../fn/client.ts"
+import { useNewTelegramClient } from "../fn/client.ts"
 
 interface IInitialState {
     phoneNumber: string
@@ -16,13 +15,10 @@ const Auth: React.FC = () => {
             password: "",
             phoneCode: "",
         })
-    const [currentClient, setCurrentClient] = useState<TelegramClient | null>(
-        null,
-    )
+
+    const client = useNewTelegramClient()
 
     async function sendCodeHandler(): Promise<void> {
-        const client = await createTelegramClient(phoneNumber)
-        setCurrentClient(client)
         await client.connect()
         await client.sendCode(
             {
@@ -34,8 +30,8 @@ const Auth: React.FC = () => {
     }
 
     async function clientStartHandler(): Promise<void> {
-        if (currentClient) {
-            await currentClient.start({
+        if (client) {
+            await client.start({
                 phoneNumber,
                 password: userAuthParamCallback(password),
                 phoneCode: userAuthParamCallback(phoneCode),
@@ -43,7 +39,7 @@ const Auth: React.FC = () => {
             })
             localStorage.setItem(
                 `${TELEGRAM_SESSION_PREFIX}_${phoneNumber}`,
-                JSON.stringify(currentClient.session.save()),
+                JSON.stringify(client.session.save()),
             )
             // setAuthorized(true)
         }

@@ -1,83 +1,86 @@
 import React, { useEffect, useState } from "react"
 import { Dialog } from "telegram/tl/custom/dialog"
 import { Avatar, Stack, Typography } from "@mui/joy"
-import createTelegramClient from "../fn/client.ts"
-import { TELEGRAM_SESSION_PREFIX } from "../consts.ts"
 import ChatView from "../components/Chat.tsx"
 import { Buffer } from "buffer/"
-import { TelegramoDialog } from "../model.ts"
+import { useTelegramClients } from "../fn/client.ts"
 
-const getTelegramoSessionKeys = (): string[] => {
-    return Object.keys(localStorage).filter((k) =>
-        k.startsWith(TELEGRAM_SESSION_PREFIX),
-    )
+const shortMessage = (text: string | undefined, maxLen: number): string => {
+    if (!text) {
+        return "Сообщений нет..."
+    }
+
+    if (text.length > maxLen) {
+        return text.slice(0, maxLen - 3) + "..."
+    }
+
+    return text
 }
 
-const getTelegramoDialogs = async (
-    sessionKey: string,
-): Promise<TelegramoDialog[]> => {
-    const getProfilePhotoURL = async (dialog: Dialog): Promise<string> => {
-        if (!dialog.entity) {
-            return "#"
-        }
-        const photo = await client.downloadProfilePhoto(dialog.entity)
-        return photo instanceof Buffer
-            ? URL.createObjectURL(
-                  new Blob([photo.buffer], { type: "image/jpeg" }),
-              )
-            : "#"
-    }
+const useProfilePhotoURL = (dialog: Dialog): string => {
+    const [url, setURL] = useState<string>("#")
 
-    const shortMessage = (text: string | undefined, maxLen: number): string => {
-        if (!text) {
-            return "Сообщений нет..."
-        }
+    useEffect(() => {
+        ;(async () => {
+            if (!dialog.entity) {
+                return "#"
+            }
+            const photo = await dialog._client.downloadProfilePhoto(
+                dialog.entity,
+            )
+            if (photo instanceof Buffer) {
+                setURL(
+                    URL.createObjectURL(
+                        new Blob([photo.buffer], { type: "image/jpeg" }),
+                    ),
+                )
+            }
+        })()
+    }, [dialog._client, dialog.entity])
 
-        if (text.length > maxLen) {
-            return text.slice(0, maxLen - 3) + "..."
-        }
+    return url
+}
 
-        return text
-    }
+const useDialogs = (): Dialog[] => {
+    const [dialogs, setDialogs] = useState<Dialog[]>([])
 
-    const client = await createTelegramClient(sessionKey)
-    if (!(await client.connect())) {
-        return []
-    }
-    const dialogs = await client.getDialogs()
-    const photoURLList = await Promise.all(
-        dialogs.map((d) => getProfilePhotoURL(d)),
-    )
-    return dialogs.map(
-        (d, i) =>
-            new TelegramoDialog(
-                d._client,
-                d.entity!,
-                photoURLList[i],
-                d.name!,
-                shortMessage(d.message?.message, 45),
-            ),
-    )
+    const clients = useTelegramClients()
+
+    useEffect(() => {
+        ;(async () => {
+            setDialogs(
+                (await Promise.all(clients.map((c) => c.getDialogs())))
+                    .flat()
+                    .filter((d) => d.isUser),
+            )
+        })()
+    }, [clients])
+
+    return dialogs
 }
 
 const DialogPreview: React.FC<{
-    dialog: TelegramoDialog
-    handleDialogClick: (dialog: TelegramoDialog) => void
+    dialog: Dialog
+    handleDialogClick: (dialog: Dialog) => void
 }> = ({ dialog, handleDialogClick }) => {
+    const avatarURL = useProfilePhotoURL(dialog)
+
     return (
         <Stack direction="row" onClick={() => handleDialogClick(dialog)}>
-            <Avatar src={dialog.avatarURL} />
+            <Avatar src={avatarURL} />
             <Stack>
                 <Typography level="title-lg">{dialog.name}</Typography>
-                <Typography level="body-lg">{dialog.message}</Typography>
+                <Typography level="body-lg">
+                    {shortMessage(dialog.message?.message, 45)}
+                </Typography>
             </Stack>
         </Stack>
     )
 }
 
 const DialogPreviewList: React.FC<{
-    dialogs: TelegramoDialog[]
-    handleDialogClick: (dialog: TelegramoDialog) => void
+    dialogs: Dialog[]
+    handleDialogClick: (dialog: Dialog) => void
 }> = ({ dialogs, handleDialogClick }) => {
     const dialogPreviewList = dialogs.map((d, i) => (
         <DialogPreview
@@ -91,31 +94,16 @@ const DialogPreviewList: React.FC<{
 }
 
 const Home = () => {
-    const [dialogs, setDialogs] = useState<TelegramoDialog[]>([])
-    const [currentDialog, setCurrentDialog] = useState<TelegramoDialog | null>(
-        null,
-    )
+    const [currentDialog, setCurrentDialog] = useState<Dialog | null>(null)
 
-    useEffect(() => {
-        ;(async () => {
-            setDialogs(
-                (
-                    await Promise.all(
-                        getTelegramoSessionKeys().map((k) =>
-                            getTelegramoDialogs(k),
-                        ),
-                    )
-                ).flat(),
-            )
-        })()
-    }, [])
+    const dialogs = useDialogs()
 
-    const handleDialogClick = (dialog: TelegramoDialog) => {
+    const handleDialogClick = (dialog: Dialog) => {
         setCurrentDialog(dialog)
     }
 
     return (
-        <Stack flex="1" direction="row">
+        <Stack flex="1" p={2} spacing={5} useFlexGap direction="row">
             <Stack flex="0 0 25%">
                 <DialogPreviewList
                     dialogs={dialogs}
@@ -123,7 +111,7 @@ const Home = () => {
                 />
             </Stack>
             {currentDialog && (
-                <Stack flex="0 0 75%">
+                <Stack flex="1">
                     <ChatView dialog={currentDialog} />
                 </Stack>
             )}
